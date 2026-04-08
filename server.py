@@ -4,24 +4,28 @@ import os
 from flask import Flask, request
 from telegram import Bot
 
-# ===== CONFIG (VIA VARIÁVEIS DE AMBIENTE) =====
+# ===== CONFIG =====
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 GROUP_ID = int(os.getenv("GROUP_ID"))
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
+# 🔴 PRICE IDS via variável
+PRICE_DAILY = os.getenv("PRICE_DAILY")
+PRICE_MONTHLY = os.getenv("PRICE_MONTHLY")
+PRICE_LIFETIME = os.getenv("PRICE_LIFETIME")
+
+PLANS = {
+    "daily": PRICE_DAILY,
+    "monthly": PRICE_MONTHLY,
+    "lifetime": PRICE_LIFETIME
+}
+
 bot = Bot(token=BOT_TOKEN)
 app = Flask(__name__)
 
-# ===== PLANOS =====
-PLANS = {
-    "daily": "SEU_PRICE_ID_DAILY",       # 🔴 coloque seu price_id aqui
-    "monthly": "SEU_PRICE_ID_MONTHLY",   # 🔴 coloque seu price_id aqui
-    "lifetime": "SEU_PRICE_ID_LIFETIME"  # 🔴 coloque seu price_id aqui
-}
-
-# ===== CRIAR PAGAMENTO =====
+# ===== CHECKOUT =====
 @app.route("/create-checkout/<plan>/<user_id>")
 def create_checkout(plan, user_id):
     try:
@@ -60,7 +64,6 @@ def webhook():
 
         user_id = int(session["client_reference_id"])
 
-        # cria link único
         expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
 
         invite_link = bot.create_chat_invite_link(
@@ -76,6 +79,6 @@ def webhook():
 
     return "OK"
 
-# ===== START SERVER =====
+# ===== RUN =====
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=3000)
