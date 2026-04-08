@@ -1,10 +1,11 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 import requests
+import os
 
-# ===== CONFIG =====
-BOT_TOKEN = "SEU_BOT_TOKEN_AQUI"  # 🔴 coloque seu token
-BASE_URL = "https://SEU-APP.up.railway.app"  # 🔴 coloque a URL do Railway
+# ===== CONFIG (VIA VARIÁVEIS) =====
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+BASE_URL = os.getenv("BASE_URL")
 
 # ===== START =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -37,7 +38,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "💳 Complete your payment:\n\n" + payment_url
         )
 
-    except Exception:
+    except Exception as e:
+        print(e)
         await query.message.reply_text("❌ Error generating payment link.")
 
 # ===== RUN =====
