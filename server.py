@@ -2,6 +2,7 @@ import stripe
 import datetime
 import os
 import threading
+import asyncio
 from flask import Flask, request
 from telegram import Bot
 
@@ -70,14 +71,14 @@ def webhook():
         print("Pagamento confirmado para:", user_id)
 
         try:
-            # cria link único
+            # cria link único (ASSYNC CORRIGIDO)
             expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
 
-            invite_link = bot.create_chat_invite_link(
+            invite_link = asyncio.run(bot.create_chat_invite_link(
                 chat_id=GROUP_ID,
                 expire_date=expire,
                 member_limit=1
-            )
+            ))
 
             print("Link criado:", invite_link.invite_link)
 
@@ -86,11 +87,11 @@ def webhook():
             return "erro ao criar link", 500
 
         try:
-            # envia mensagem
-            bot.send_message(
+            # envia mensagem (ASSYNC CORRIGIDO)
+            asyncio.run(bot.send_message(
                 chat_id=user_id,
                 text="✅ Payment confirmed!\n\n🔥 Your VIP access (1 minute test):\n" + invite_link.invite_link
-            )
+            ))
 
             print("Mensagem enviada para:", user_id)
 
@@ -100,8 +101,8 @@ def webhook():
         # ===== REMOVER APÓS 1 MINUTO =====
         def remove_user():
             try:
-                bot.ban_chat_member(chat_id=GROUP_ID, user_id=user_id)
-                bot.unban_chat_member(chat_id=GROUP_ID, user_id=user_id)
+                asyncio.run(bot.ban_chat_member(chat_id=GROUP_ID, user_id=user_id))
+                asyncio.run(bot.unban_chat_member(chat_id=GROUP_ID, user_id=user_id))
                 print(f"Usuário {user_id} removido após 1 minuto")
             except Exception as e:
                 print("ERRO AO REMOVER:", str(e))
