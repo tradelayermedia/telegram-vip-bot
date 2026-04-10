@@ -1,6 +1,7 @@
 import stripe
 import datetime
 import os
+import threading
 from flask import Flask, request
 from telegram import Bot
 
@@ -11,7 +12,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 GROUP_ID = int(os.getenv("GROUP_ID"))
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
-# 🔴 PRICE IDS via variável
+# PRICE IDs
 PRICE_DAILY = os.getenv("PRICE_DAILY")
 PRICE_MONTHLY = os.getenv("PRICE_MONTHLY")
 PRICE_LIFETIME = os.getenv("PRICE_LIFETIME")
@@ -25,7 +26,7 @@ PLANS = {
 bot = Bot(token=BOT_TOKEN)
 app = Flask(__name__)
 
-# ===== CHECKOUT =====
+# ===== CRIAR CHECKOUT =====
 @app.route("/create-checkout/<plan>/<user_id>")
 def create_checkout(plan, user_id):
     try:
@@ -44,6 +45,7 @@ def create_checkout(plan, user_id):
         return {"url": session.url}
 
     except Exception as e:
+        print("Erro ao criar checkout:", e)
         return {"error": str(e)}
 
 # ===== WEBHOOK =====
@@ -64,6 +66,7 @@ def webhook():
 
         user_id = int(session["client_reference_id"])
 
+        # cria link único (5 minutos)
         expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
 
         invite_link = bot.create_chat_invite_link(
@@ -72,10 +75,22 @@ def webhook():
             member_limit=1
         )
 
+        # envia link
         bot.send_message(
             chat_id=user_id,
-            text="✅ Payment confirmed!\n\n🔥 Your VIP access:\n" + invite_link.invite_link
+            text="✅ Payment confirmed!\n\n🔥 Your VIP access (1 minute test):\n" + invite_link.invite_link
         )
+
+        # ===== REMOVER APÓS 1 MINUTO =====
+        def remove_user():
+            try:
+                bot.ban_chat_member(chat_id=GROUP_ID, user_id=user_id)
+                bot.unban_chat_member(chat_id=GROUP_ID, user_id=user_id)
+                print(f"Usuário {user_id} removido após 1 minuto")
+            except Exception as e:
+                print("Erro ao remover usuário:", e)
+
+        threading.Timer(60, remove_user).start()  # 60 segundos
 
     return "OK"
 
