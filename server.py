@@ -14,10 +14,10 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 📸 Grupo DAILY (somente fotos)
+# 📸 DAILY (somente fotos)
 GROUP_FOTOS = int(os.getenv("GROUP_FOTOS"))
 
-# 👑 Grupo PREMIUM (fotos + vídeos)
+# 👑 PREMIUM (fotos + vídeos)
 GROUP_PREMIUM = int(os.getenv("GROUP_PREMIUM"))
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
@@ -26,10 +26,8 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 # LINKS
 # ==================================================
 
-# 🔥 URL DO RAILWAY
 BASE_URL = os.getenv("BASE_URL")
 
-# 🔥 LINK DO BOT
 BOT_LINK = os.getenv("BOT_LINK")
 
 # ==================================================
@@ -58,6 +56,9 @@ async def process_user(user_id, plan):
 
     try:
 
+        print(f"PROCESSANDO USUÁRIO {user_id}")
+        print(f"PLANO: {plan}")
+
         # link expira em 5 minutos
         expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
 
@@ -66,6 +67,8 @@ async def process_user(user_id, plan):
         # ==================================================
 
         if plan == "daily":
+
+            print("ENTRANDO NO DAILY")
 
             invite = await bot.create_chat_invite_link(
                 chat_id=GROUP_FOTOS,
@@ -89,7 +92,7 @@ async def process_user(user_id, plan):
                 text=message
             )
 
-            print("Link DAILY enviado")
+            print("LINK DAILY ENVIADO")
 
             # ==================================================
             # TESTE: REMOVE APÓS 1 MINUTO
@@ -109,7 +112,7 @@ async def process_user(user_id, plan):
                     user_id=user_id
                 )
 
-                print(f"Usuário {user_id} removido do DAILY")
+                print(f"USUÁRIO {user_id} REMOVIDO DO DAILY")
 
             except Exception as e:
 
@@ -120,6 +123,8 @@ async def process_user(user_id, plan):
         # ==================================================
 
         elif plan in ["monthly", "lifetime"]:
+
+            print("ENTRANDO NO PREMIUM")
 
             invite = await bot.create_chat_invite_link(
                 chat_id=GROUP_PREMIUM,
@@ -143,7 +148,11 @@ async def process_user(user_id, plan):
                 text=message
             )
 
-            print("Link PREMIUM enviado")
+            print("LINK PREMIUM ENVIADO")
+
+        else:
+
+            print("PLANO INVÁLIDO:", plan)
 
     except Exception as e:
 
@@ -158,6 +167,10 @@ def create_checkout(plan, user_id):
 
     try:
 
+        print("CRIANDO CHECKOUT")
+        print("PLANO:", plan)
+        print("USUÁRIO:", user_id)
+
         session = stripe.checkout.Session.create(
 
             payment_method_types=[
@@ -171,20 +184,18 @@ def create_checkout(plan, user_id):
 
             mode="payment",
 
-            client_reference_id=user_id,
-
             metadata={
-                "plan": plan
+                "plan": str(plan),
+                "user_id": str(user_id)
             },
 
-            # 🔥 SUCCESS PAGE
             success_url=f"{BASE_URL}/success",
 
-            # 🔥 CANCEL
             cancel_url=BOT_LINK
         )
 
-        # 🔥 REDIRECIONA DIRETO PARA O CHECKOUT
+        print("CHECKOUT CRIADO")
+
         return redirect(session.url)
 
     except Exception as e:
@@ -259,30 +270,40 @@ def webhook():
 
     except Exception as e:
 
-        print("Webhook error:", e)
+        print("WEBHOOK ERROR:", e)
 
         return "error", 400
 
     # ==================================================
-    # PAGAMENTO APROVADO
+    # PAYMENT SUCCESS
     # ==================================================
 
     if event["type"] == "checkout.session.completed":
 
-        print("Webhook recebido: checkout.session.completed")
+        print("WEBHOOK RECEBIDO: checkout.session.completed")
 
         session = event["data"]["object"]
 
-        user_id = int(session["client_reference_id"])
+        print(session)
 
-        plan = session["metadata"]["plan"]
+        try:
 
-        print("Pagamento confirmado para:", user_id)
-        print("Plano:", plan)
+            user_id = int(session["metadata"]["user_id"])
 
-        asyncio.run(
-            process_user(user_id, plan)
-        )
+            plan = str(
+                session["metadata"]["plan"]
+            ).lower()
+
+            print("USER RECEBIDO:", user_id)
+            print("PLAN RECEBIDO:", plan)
+
+            asyncio.run(
+                process_user(user_id, plan)
+            )
+
+        except Exception as e:
+
+            print("ERRO PROCESSANDO WEBHOOK:", e)
 
     return "OK"
 
