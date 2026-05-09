@@ -14,13 +14,23 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 📸 Grupo DAILY (somente fotos)
+# 📸 Grupo DAILY
 GROUP_FOTOS = int(os.getenv("GROUP_FOTOS"))
 
-# 👑 Grupo PREMIUM (fotos + vídeos)
+# 👑 Grupo PREMIUM
 GROUP_PREMIUM = int(os.getenv("GROUP_PREMIUM"))
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+
+# ==================================================
+# LINKS
+# ==================================================
+
+# 🔴 COLOQUE SUA URL REAL DO RAILWAY
+BASE_URL = "https://SEU-APP.up.railway.app"
+
+# 🔴 COLOQUE SEU BOT REAL
+BOT_LINK = "https://t.me/SEU_BOT"
 
 # ==================================================
 # PRICE IDS
@@ -33,14 +43,6 @@ PLANS = {
 }
 
 # ==================================================
-# LINKS
-# ==================================================
-
-BOT_LINK = "https://t.me/SEU_BOT"
-
-SUCCESS_REDIRECT = BOT_LINK
-
-# ==================================================
 # APP
 # ==================================================
 
@@ -49,7 +51,7 @@ bot = Bot(token=BOT_TOKEN)
 app = Flask(__name__)
 
 # ==================================================
-# PROCESSAR USUÁRIO
+# PROCESS USER
 # ==================================================
 
 async def process_user(user_id, plan):
@@ -175,12 +177,14 @@ def create_checkout(plan, user_id):
                 "plan": plan
             },
 
-            success_url="https://SEU-APP.up.railway.app/success",
+            # 🔥 PÁGINA DE SUCESSO
+            success_url=f"{BASE_URL}/success",
 
+            # 🔥 CANCELAMENTO
             cancel_url=BOT_LINK
         )
 
-        # 🔥 REDIRECIONA AUTOMATICAMENTE
+        # 🔥 REDIRECIONA DIRETO PARA O CHECKOUT
         return redirect(session.url)
 
     except Exception as e:
@@ -203,23 +207,31 @@ def success():
 
     <head>
 
-        <meta http-equiv="refresh" content="3;url={SUCCESS_REDIRECT}">
+        <meta http-equiv="refresh" content="4;url={BOT_LINK}">
+
+        <title>VIP Access</title>
 
     </head>
 
     <body style="
-        background:black;
+        background:#000;
         color:white;
+        font-family:sans-serif;
         text-align:center;
         padding-top:100px;
-        font-family:sans-serif;
     ">
 
-        <h1>✅ Payment Successful</h1>
+        <h1 style="font-size:48px;">
+            🔥 VIP ACCESS UNLOCKED
+        </h1>
 
-        <p>Your VIP access is being prepared...</p>
+        <p style="font-size:22px;">
+            Your private content is waiting...
+        </p>
 
-        <p>Returning to Telegram...</p>
+        <p style="margin-top:30px;font-size:18px;color:#aaa;">
+            Returning to Telegram...
+        </p>
 
     </body>
 
@@ -252,7 +264,7 @@ def webhook():
         return "error", 400
 
     # ==================================================
-    # PAGAMENTO APROVADO
+    # PAYMENT SUCCESS
     # ==================================================
 
     if event["type"] == "checkout.session.completed":
