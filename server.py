@@ -2,7 +2,8 @@ import stripe
 import datetime
 import os
 import asyncio
-from flask import Flask, request
+
+from flask import Flask, request, redirect
 from telegram import Bot
 
 # ==================================================
@@ -32,10 +33,19 @@ PLANS = {
 }
 
 # ==================================================
+# LINKS
+# ==================================================
+
+BOT_LINK = "https://t.me/SEU_BOT"
+
+SUCCESS_REDIRECT = BOT_LINK
+
+# ==================================================
 # APP
 # ==================================================
 
 bot = Bot(token=BOT_TOKEN)
+
 app = Flask(__name__)
 
 # ==================================================
@@ -50,7 +60,7 @@ async def process_user(user_id, plan):
         expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
 
         # ==================================================
-        # DAILY = SOMENTE GRUPO DE FOTOS
+        # DAILY
         # ==================================================
 
         if plan == "daily":
@@ -64,18 +74,20 @@ async def process_user(user_id, plan):
             message = f"""
 ✅ Payment Confirmed
 
-🔥 Welcome inside
+🔥 DAILY ACCESS UNLOCKED
 
-📸 DAILY ACCESS:
+📸 Join here:
 {invite.invite_link}
 
-⚠️ This link expires in 5 minutes.
+⚠️ This invite expires in 5 minutes.
 """
 
             await bot.send_message(
                 chat_id=user_id,
                 text=message
             )
+
+            print("Link DAILY enviado")
 
             # ==================================================
             # TESTE: REMOVE APÓS 1 MINUTO
@@ -84,6 +96,7 @@ async def process_user(user_id, plan):
             await asyncio.sleep(60)
 
             try:
+
                 await bot.ban_chat_member(
                     chat_id=GROUP_FOTOS,
                     user_id=user_id
@@ -97,10 +110,11 @@ async def process_user(user_id, plan):
                 print(f"Usuário {user_id} removido do DAILY")
 
             except Exception as e:
+
                 print("ERRO AO REMOVER:", e)
 
         # ==================================================
-        # MONTHLY / LIFETIME = GRUPO PREMIUM
+        # MONTHLY / LIFETIME
         # ==================================================
 
         elif plan in ["monthly", "lifetime"]:
@@ -116,10 +130,10 @@ async def process_user(user_id, plan):
 
 👑 VIP ACCESS UNLOCKED
 
-🔥 Premium Photos & Videos:
+🔥 Join your premium group:
 {invite.invite_link}
 
-⚠️ This link expires in 5 minutes.
+⚠️ This invite expires in 5 minutes.
 """
 
             await bot.send_message(
@@ -127,9 +141,10 @@ async def process_user(user_id, plan):
                 text=message
             )
 
-        print("Mensagem enviada com sucesso")
+            print("Link PREMIUM enviado")
 
     except Exception as e:
+
         print("ERRO PROCESS_USER:", e)
 
 # ==================================================
@@ -143,7 +158,9 @@ def create_checkout(plan, user_id):
 
         session = stripe.checkout.Session.create(
 
-            payment_method_types=["card"],
+            payment_method_types=[
+                "card"
+            ],
 
             line_items=[{
                 "price": PLANS[plan],
@@ -152,7 +169,6 @@ def create_checkout(plan, user_id):
 
             mode="payment",
 
-            # IMPORTANTE
             client_reference_id=user_id,
 
             metadata={
@@ -161,12 +177,11 @@ def create_checkout(plan, user_id):
 
             success_url="https://SEU-APP.up.railway.app/success",
 
-            cancel_url="https://t.me/SEU_BOT"
+            cancel_url=BOT_LINK
         )
 
-        return {
-            "url": session.url
-        }
+        # 🔥 REDIRECIONA AUTOMATICAMENTE
+        return redirect(session.url)
 
     except Exception as e:
 
@@ -177,22 +192,28 @@ def create_checkout(plan, user_id):
         }
 
 # ==================================================
-# PÁGINA DE SUCESSO
+# SUCCESS PAGE
 # ==================================================
 
 @app.route("/success")
 def success():
 
-    return """
+    return f"""
     <html>
 
     <head>
 
-        <meta http-equiv="refresh" content="3;url=https://t.me/SEU_BOT">
+        <meta http-equiv="refresh" content="3;url={SUCCESS_REDIRECT}">
 
     </head>
 
-    <body style="background:black;color:white;text-align:center;padding-top:100px;font-family:sans-serif;">
+    <body style="
+        background:black;
+        color:white;
+        text-align:center;
+        padding-top:100px;
+        font-family:sans-serif;
+    ">
 
         <h1>✅ Payment Successful</h1>
 
