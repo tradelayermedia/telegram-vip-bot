@@ -14,10 +14,10 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# 📸 Grupo DAILY
+# 📸 Grupo DAILY (somente fotos)
 GROUP_FOTOS = int(os.getenv("GROUP_FOTOS"))
 
-# 👑 Grupo PREMIUM
+# 👑 Grupo PREMIUM (fotos + vídeos)
 GROUP_PREMIUM = int(os.getenv("GROUP_PREMIUM"))
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
@@ -26,11 +26,11 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 # LINKS
 # ==================================================
 
-# 🔴 COLOQUE SUA URL REAL DO RAILWAY
-BASE_URL = "https://SEU-APP.up.railway.app"
+# 🔥 URL DO RAILWAY
+BASE_URL = os.getenv("BASE_URL")
 
-# 🔴 COLOQUE SEU BOT REAL
-BOT_LINK = "https://t.me/SEU_BOT"
+# 🔥 LINK DO BOT
+BOT_LINK = os.getenv("BOT_LINK")
 
 # ==================================================
 # PRICE IDS
@@ -150,7 +150,7 @@ async def process_user(user_id, plan):
         print("ERRO PROCESS_USER:", e)
 
 # ==================================================
-# CHECKOUT
+# CREATE CHECKOUT
 # ==================================================
 
 @app.route("/create-checkout/<plan>/<user_id>")
@@ -177,10 +177,10 @@ def create_checkout(plan, user_id):
                 "plan": plan
             },
 
-            # 🔥 PÁGINA DE SUCESSO
+            # 🔥 SUCCESS PAGE
             success_url=f"{BASE_URL}/success",
 
-            # 🔥 CANCELAMENTO
+            # 🔥 CANCEL
             cancel_url=BOT_LINK
         )
 
@@ -264,7 +264,7 @@ def webhook():
         return "error", 400
 
     # ==================================================
-    # PAYMENT SUCCESS
+    # PAGAMENTO APROVADO
     # ==================================================
 
     if event["type"] == "checkout.session.completed":
