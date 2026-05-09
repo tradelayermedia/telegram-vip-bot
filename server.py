@@ -41,12 +41,46 @@ PLANS = {
 }
 
 # ==================================================
+# TEMPOS
+# ==================================================
+
+# 24 horas
+DAILY_TIME = 86400
+
+# 30 dias
+MONTHLY_TIME = 2592000
+
+# ==================================================
 # APP
 # ==================================================
 
 bot = Bot(token=BOT_TOKEN)
 
 app = Flask(__name__)
+
+# ==================================================
+# REMOVER USUÁRIO
+# ==================================================
+
+async def remove_user(group_id, user_id):
+
+    try:
+
+        await bot.ban_chat_member(
+            chat_id=group_id,
+            user_id=user_id
+        )
+
+        await bot.unban_chat_member(
+            chat_id=group_id,
+            user_id=user_id
+        )
+
+        print(f"USUÁRIO {user_id} REMOVIDO")
+
+    except Exception as e:
+
+        print("ERRO AO REMOVER:", e)
 
 # ==================================================
 # PROCESS USER
@@ -85,6 +119,7 @@ async def process_user(user_id, plan):
 {invite.invite_link}
 
 ⚠️ This invite expires in 5 minutes.
+⚠️ Access duration: 24 hours.
 """
 
             await bot.send_message(
@@ -95,36 +130,23 @@ async def process_user(user_id, plan):
             print("LINK DAILY ENVIADO")
 
             # ==================================================
-            # TESTE: REMOVE APÓS 1 MINUTO
+            # REMOVE APÓS 24 HORAS
             # ==================================================
 
-            await asyncio.sleep(60)
+            await asyncio.sleep(DAILY_TIME)
 
-            try:
-
-                await bot.ban_chat_member(
-                    chat_id=GROUP_FOTOS,
-                    user_id=user_id
-                )
-
-                await bot.unban_chat_member(
-                    chat_id=GROUP_FOTOS,
-                    user_id=user_id
-                )
-
-                print(f"USUÁRIO {user_id} REMOVIDO DO DAILY")
-
-            except Exception as e:
-
-                print("ERRO AO REMOVER:", e)
+            await remove_user(
+                GROUP_FOTOS,
+                user_id
+            )
 
         # ==================================================
-        # MONTHLY / LIFETIME
+        # MONTHLY
         # ==================================================
 
-        elif plan in ["monthly", "lifetime"]:
+        elif plan == "monthly":
 
-            print("ENTRANDO NO PREMIUM")
+            print("ENTRANDO NO MONTHLY")
 
             invite = await bot.create_chat_invite_link(
                 chat_id=GROUP_PREMIUM,
@@ -135,12 +157,13 @@ async def process_user(user_id, plan):
             message = f"""
 ✅ Payment Confirmed
 
-👑 VIP ACCESS UNLOCKED
+🔥 MONTHLY VIP UNLOCKED
 
-🔥 Join your premium group:
+👑 Join here:
 {invite.invite_link}
 
 ⚠️ This invite expires in 5 minutes.
+⚠️ Access duration: 30 days.
 """
 
             await bot.send_message(
@@ -148,7 +171,54 @@ async def process_user(user_id, plan):
                 text=message
             )
 
-            print("LINK PREMIUM ENVIADO")
+            print("LINK MONTHLY ENVIADO")
+
+            # ==================================================
+            # REMOVE APÓS 30 DIAS
+            # ==================================================
+
+            await asyncio.sleep(MONTHLY_TIME)
+
+            await remove_user(
+                GROUP_PREMIUM,
+                user_id
+            )
+
+        # ==================================================
+        # LIFETIME
+        # ==================================================
+
+        elif plan == "lifetime":
+
+            print("ENTRANDO NO LIFETIME")
+
+            invite = await bot.create_chat_invite_link(
+                chat_id=GROUP_PREMIUM,
+                expire_date=expire,
+                member_limit=1
+            )
+
+            message = f"""
+✅ Payment Confirmed
+
+👑 LIFETIME ACCESS UNLOCKED
+
+🔥 Join here:
+{invite.invite_link}
+
+♾ Permanent VIP access granted.
+"""
+
+            await bot.send_message(
+                chat_id=user_id,
+                text=message
+            )
+
+            print("LINK LIFETIME ENVIADO")
+
+        # ==================================================
+        # INVALID PLAN
+        # ==================================================
 
         else:
 
